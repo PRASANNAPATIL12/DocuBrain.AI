@@ -17,13 +17,19 @@ export async function POST(request: Request) {
       return NextResponse.json({error: 'No file uploaded.'}, {status: 400});
     }
 
-    const text = await parsePdf(file)
+    let text = '';
+    if (file.type === 'application/pdf') {
+        text = await parsePdf(file);
+    } else {
+        text = await file.text();
+    }
+
 
     return NextResponse.json({text});
   } catch (error) {
-    console.error('Error parsing PDF:', error);
+    console.error('Error parsing file:', error);
     return NextResponse.json(
-      {error: 'Failed to parse PDF.'},
+      {error: 'Failed to parse file.'},
       {status: 500}
     );
   }

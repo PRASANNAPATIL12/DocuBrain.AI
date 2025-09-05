@@ -64,14 +64,14 @@ export function DocumentProcessor({
           </CardTitle>
         </div>
         <CardDescription>
-          Upload a PDF or paste document content below. The system will split it and generate embeddings.
+          Upload a PDF, TXT or paste document content below. The system will split it and generate embeddings.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col gap-4">
-        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf" className="hidden" />
+        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf,.txt" className="hidden" />
         <Button onClick={handleUploadClick} variant="outline" disabled={disabled} className="w-full sm:w-auto">
           {isUploading ? <Loader2 className="animate-spin" /> : <UploadCloud />}
-          Upload PDF
+          Upload File
         </Button>
         {fileName && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground p-2 border rounded-md">
