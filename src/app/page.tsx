@@ -35,13 +35,14 @@ export default function Home() {
 
   const { toast } = useToast();
 
-  const handleProcess = async () => {
-    if (!documentText.trim()) return;
+  const handleProcess = async (textToProcess?: string) => {
+    const content = textToProcess || documentText;
+    if (!content.trim()) return;
     setIsLoading(true);
     setChunks([]);
     setAnswer("");
     try {
-      const paragraphs = documentText
+      const paragraphs = content
         .split(/\n\s*\n/)
         .map((p) => p.trim())
         .filter((p) => p.length > 20);
@@ -125,40 +126,42 @@ export default function Home() {
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
-
+  
     setIsUploading(true);
-    setDocumentText("");
+    setDocumentText('');
     setChunks([]);
-    setAnswer("");
+    setAnswer('');
     setFileName(file.name);
-
+  
     const formData = new FormData();
     formData.append('file', file);
-
+  
     try {
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
-
+  
       if (!response.ok) {
         throw new Error('File upload failed');
       }
-
+  
       const { text } = await response.json();
       setDocumentText(text);
       toast({
-        title: "File Uploaded",
-        description: "The document text has been extracted. You can now process it.",
+        title: 'File Uploaded',
+        description:
+          'The document text has been extracted. Processing...',
       });
-
+      // Automatically process the text after upload
+      await handleProcess(text);
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error('Error uploading file:', error);
       setFileName(null);
       toast({
-        variant: "destructive",
-        title: "An Error Occurred",
-        description: "Failed to upload or parse the file. Please try again.",
+        variant: 'destructive',
+        title: 'An Error Occurred',
+        description: 'Failed to upload or parse the file. Please try again.',
       });
     } finally {
       setIsUploading(false);
@@ -173,7 +176,7 @@ export default function Home() {
           <DocumentProcessor
             documentText={documentText}
             setDocumentText={setDocumentText}
-            handleProcess={handleProcess}
+            handleProcess={() => handleProcess()}
             isLoading={isLoading}
             chunks={chunks.map(c => c.text)}
             handleFileUpload={handleFileUpload}
