@@ -176,7 +176,7 @@ export default function Home() {
           <DocumentProcessor
             documentText={documentText}
             setDocumentText={setDocumentText}
-            handleProcess={() => handleProcess()}
+            handleProcess={handleProcess}
             isLoading={isLoading}
             chunks={chunks.map(c => c.text)}
             handleFileUpload={handleFileUpload}
