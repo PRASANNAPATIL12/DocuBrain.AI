@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 interface DocumentProcessorProps {
   documentText: string;
   setDocumentText: (text: string) => void;
-  handleProcess: () => void;
+  handleProcess: (text?: string) => void;
   isLoading: boolean;
   chunks: string[];
   handleFileUpload: (file: File) => void;
@@ -97,7 +97,7 @@ export function DocumentProcessor({
           disabled={disabled}
         />
         <Button
-          onClick={handleProcess}
+          onClick={() => handleProcess()}
           disabled={disabled || !documentText.trim()}
           className="w-full"
         >
