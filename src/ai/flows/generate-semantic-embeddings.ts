@@ -31,13 +31,6 @@ export async function generateSemanticEmbeddings(
   return generateSemanticEmbeddingsFlow(input);
 }
 
-const generateSemanticEmbeddingsPrompt = ai.definePrompt({
-  name: 'generateSemanticEmbeddingsPrompt',
-  input: {schema: GenerateSemanticEmbeddingsInputSchema},
-  output: {schema: GenerateSemanticEmbeddingsOutputSchema},
-  prompt: `Generate a semantic embedding for the following text chunk:\n\n{{textChunk}}`,
-});
-
 const generateSemanticEmbeddingsFlow = ai.defineFlow(
   {
     name: 'generateSemanticEmbeddingsFlow',
@@ -45,7 +38,10 @@ const generateSemanticEmbeddingsFlow = ai.defineFlow(
     outputSchema: GenerateSemanticEmbeddingsOutputSchema,
   },
   async input => {
-    const {output} = await generateSemanticEmbeddingsPrompt(input);
-    return output!;
+    const embedding = await ai.embed({
+      content: input.textChunk,
+      embedder: 'googleai/text-embedding-004',
+    });
+    return {embedding};
   }
 );
