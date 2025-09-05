@@ -1,12 +1,6 @@
 // src/app/api/upload/route.ts
 import {NextResponse} from 'next/server';
-import pdf from 'pdf-parse';
-
-async function parsePdf(file: File) {
-    const fileBuffer = await file.arrayBuffer();
-    const data = await pdf(fileBuffer);
-    return data.text;
-}
+import {parse} from 'pdf-parse';
 
 export async function POST(request: Request) {
   try {
@@ -17,9 +11,10 @@ export async function POST(request: Request) {
       return NextResponse.json({error: 'No file uploaded.'}, {status: 400});
     }
 
-    const text = await parsePdf(file)
+    const fileBuffer = await file.arrayBuffer();
+    const data = await parse(fileBuffer);
 
-    return NextResponse.json({text});
+    return NextResponse.json({text: data.text});
   } catch (error) {
     console.error('Error parsing PDF:', error);
     return NextResponse.json(
