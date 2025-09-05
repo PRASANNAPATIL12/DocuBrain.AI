@@ -1,13 +1,13 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { Bot, FileText, Loader2 } from "lucide-react";
+import { useRef } from "react";
+import { FileText, Loader2, UploadCloud, File as FileIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -20,6 +20,9 @@ interface DocumentProcessorProps {
   handleProcess: () => void;
   isLoading: boolean;
   chunks: string[];
+  handleFileUpload: (file: File) => void;
+  isUploading: boolean;
+  fileName: string | null;
 }
 
 export function DocumentProcessor({
@@ -28,10 +31,27 @@ export function DocumentProcessor({
   handleProcess,
   isLoading,
   chunks,
+  handleFileUpload,
+  isUploading,
+  fileName,
 }: DocumentProcessorProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setDocumentText(e.target.value);
   };
+  
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileUpload(e.target.files[0]);
+    }
+  };
+  
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const disabled = isLoading || isUploading;
 
   return (
     <Card className="flex flex-col">
@@ -43,21 +63,41 @@ export function DocumentProcessor({
           </CardTitle>
         </div>
         <CardDescription>
-          Paste your document content below. The system will automatically
-          split it into manageable chunks for the AI.
+          Upload a PDF or paste document content below. The system will split it and generate embeddings.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col gap-4">
+        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf" className="hidden" />
+        <Button onClick={handleUploadClick} variant="outline" disabled={disabled}>
+          {isUploading ? <Loader2 className="animate-spin" /> : <UploadCloud />}
+          Upload PDF
+        </Button>
+        {fileName && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground p-2 border rounded-md">
+            <FileIcon className="h-4 w-4" />
+            <span>{fileName}</span>
+          </div>
+        )}
+        <div className="relative text-center">
+            <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                Or
+                </span>
+            </div>
+        </div>
         <Textarea
           placeholder="Paste your document here..."
           value={documentText}
           onChange={handleTextChange}
-          className="min-h-[200px] flex-grow text-sm"
-          disabled={isLoading}
+          className="min-h-[150px] flex-grow text-sm"
+          disabled={disabled}
         />
         <Button
           onClick={handleProcess}
-          disabled={isLoading || !documentText.trim()}
+          disabled={disabled || !documentText.trim()}
           className="w-full"
         >
           {isLoading ? (
