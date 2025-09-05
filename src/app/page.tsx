@@ -29,7 +29,6 @@ export default function Home() {
     setIsLoading(true);
     setChunks([]);
     setAnswer("");
-    setFileName(null);
     try {
       const paragraphs = documentText
         .split(/\n\s*\n/)
@@ -142,7 +141,7 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="flex-grow container mx-auto p-4 md:p-8">
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           <DocumentProcessor
             documentText={documentText}
             setDocumentText={setDocumentText}

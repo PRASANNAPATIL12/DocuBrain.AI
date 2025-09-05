@@ -45,9 +45,8 @@ export function QAInterface({
   const [origin, setOrigin] = useState("");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setOrigin(window.location.origin);
-    }
+    // This code runs only on the client, after the component has mounted.
+    setOrigin(window.location.origin);
   }, []);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -69,7 +68,7 @@ export function QAInterface({
       <CardHeader>
         <div className="flex items-center gap-3">
           <Bot className="h-6 w-6" />
-          <CardTitle className="font-headline text-2xl">
+          <CardTitle className="font-headline text-xl md:text-2xl">
             2. Ask a Question
           </CardTitle>
         </div>
@@ -78,7 +77,7 @@ export function QAInterface({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Input
             placeholder="e.g., What is the company's leave policy?"
             value={query}
@@ -89,6 +88,7 @@ export function QAInterface({
           <Button
             onClick={handleQuery}
             disabled={!isDocumentProcessed || isAnswering || !query.trim()}
+            className="w-full sm:w-auto"
           >
             {isAnswering ? (
               <Loader2 className="animate-spin" />

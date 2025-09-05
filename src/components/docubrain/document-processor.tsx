@@ -59,7 +59,7 @@ export function DocumentProcessor({
       <CardHeader>
         <div className="flex items-center gap-3">
           <FileText className="h-6 w-6" />
-          <CardTitle className="font-headline text-2xl">
+          <CardTitle className="font-headline text-xl md:text-2xl">
             1. Process Document
           </CardTitle>
         </div>
@@ -69,14 +69,14 @@ export function DocumentProcessor({
       </CardHeader>
       <CardContent className="flex-grow flex flex-col gap-4">
         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".pdf" className="hidden" />
-        <Button onClick={handleUploadClick} variant="outline" disabled={disabled}>
+        <Button onClick={handleUploadClick} variant="outline" disabled={disabled} className="w-full sm:w-auto">
           {isUploading ? <Loader2 className="animate-spin" /> : <UploadCloud />}
           Upload PDF
         </Button>
         {fileName && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground p-2 border rounded-md">
             <FileIcon className="h-4 w-4" />
-            <span>{fileName}</span>
+            <span className="truncate">{fileName}</span>
           </div>
         )}
         <div className="relative text-center">
