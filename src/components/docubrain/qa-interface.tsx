@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Bot, Loader2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +42,13 @@ export function QAInterface({
   apiEndpoint,
 }: QAInterfaceProps) {
   const { toast } = useToast();
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
+  }, []);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
@@ -114,19 +122,19 @@ export function QAInterface({
             </div>
         )}
       </CardContent>
-      {apiEndpoint && (
+      {apiEndpoint && origin && (
         <CardFooter className="flex flex-col items-start gap-2 pt-4 border-t">
             <h3 className="text-sm font-medium text-muted-foreground">
               Your Q&amp;A API Endpoint
             </h3>
             <div className="w-full flex items-center gap-2 rounded-md border p-2 bg-muted/50">
               <pre className="text-xs overflow-x-auto">
-                <code>{`POST ${window.location.origin}${apiEndpoint}`}</code>
+                <code>{`POST ${origin}${apiEndpoint}`}</code>
               </pre>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(`curl -X POST ${window.location.origin}${apiEndpoint} -H "Content-Type: application/json" -d '{"query": "Your question here..."}'`)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(`curl -X POST ${origin}${apiEndpoint} -H "Content-Type: application/json" -d '{"query": "Your question here..."}'`)}>
                       <Copy className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -137,7 +145,7 @@ export function QAInterface({
               </TooltipProvider>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-                The API request body should contain your `query` and the processed `chunks` from step 1. For a real application, you would store the chunks/embeddings in a database.
+                The API request body should contain your \`query\` and the processed \`chunks\` from step 1. For a real application, you would store the chunks/embeddings in a database.
             </p>
         </CardFooter>
       )}
