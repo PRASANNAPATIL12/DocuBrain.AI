@@ -1,6 +1,8 @@
 // src/app/api/upload/route.ts
 import {NextResponse} from 'next/server';
-import pdf from 'pdf-parse';
+
+// Use require for CommonJS module compatibility
+const pdf = require('pdf-parse');
 
 export async function POST(request: Request) {
   try {
