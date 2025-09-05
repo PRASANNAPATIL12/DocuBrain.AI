@@ -42,6 +42,6 @@ const generateSemanticEmbeddingsFlow = ai.defineFlow(
       content: input.textChunk,
       embedder: 'googleai/text-embedding-004',
     });
-    return {embedding};
+    return {embedding: embedding};
   }
 );
