@@ -45,7 +45,7 @@ export default function Home() {
       const paragraphs = content
         .split(/\n\s*\n/)
         .map((p) => p.trim())
-        .filter((p) => p.length > 20);
+        .filter((p) => p.length > 0);
 
       const chunkPromises = paragraphs.map(async (p) => {
         const { embedding } = await generateSemanticEmbeddings({ textChunk: p });
