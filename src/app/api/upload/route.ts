@@ -5,8 +5,8 @@ import pdf from 'pdf-parse';
 export const runtime = 'nodejs';
 
 async function parsePdf(file: File) {
-  const fileBuffer = await file.arrayBuffer();
-  const data = await pdf(Buffer.from(fileBuffer));
+  const fileBuffer = Buffer.from(await file.arrayBuffer());
+  const data = await pdf(fileBuffer);
   return data.text;
 }
 
