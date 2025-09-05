@@ -28,7 +28,11 @@ export type GenerateSemanticEmbeddingsOutput = z.infer<
 export async function generateSemanticEmbeddings(
   input: GenerateSemanticEmbeddingsInput
 ): Promise<GenerateSemanticEmbeddingsOutput> {
-  return generateSemanticEmbeddingsFlow(input);
+  const embedding = await ai.embed({
+    content: input.textChunk,
+    embedder: 'googleai/text-embedding-004',
+  });
+  return { embedding };
 }
 
 const generateSemanticEmbeddingsFlow = ai.defineFlow(
@@ -38,10 +42,6 @@ const generateSemanticEmbeddingsFlow = ai.defineFlow(
     outputSchema: GenerateSemanticEmbeddingsOutputSchema,
   },
   async input => {
-    const embedding = await ai.embed({
-      content: input.textChunk,
-      embedder: 'googleai/text-embedding-004',
-    });
-    return {embedding: embedding};
+    return generateSemanticEmbeddings(input);
   }
 );
