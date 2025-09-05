@@ -2,10 +2,12 @@
 import {NextResponse} from 'next/server';
 import pdf from 'pdf-parse';
 
+export const runtime = 'nodejs';
+
 async function parsePdf(file: File) {
-    const fileBuffer = await file.arrayBuffer();
-    const data = await pdf(fileBuffer);
-    return data.text;
+  const fileBuffer = await file.arrayBuffer();
+  const data = await pdf(Buffer.from(fileBuffer));
+  return data.text;
 }
 
 export async function POST(request: Request) {
@@ -19,11 +21,10 @@ export async function POST(request: Request) {
 
     let text = '';
     if (file.type === 'application/pdf') {
-        text = await parsePdf(file);
+      text = await parsePdf(file);
     } else {
-        text = await file.text();
+      text = await file.text();
     }
-
 
     return NextResponse.json({text});
   } catch (error) {
