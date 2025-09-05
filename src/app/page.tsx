@@ -12,6 +12,17 @@ export interface Chunk {
   embedding: number[];
 }
 
+// Cosine similarity function
+function cosineSimilarity(vecA: number[], vecB: number[]) {
+  const dotProduct = vecA.reduce((acc, val, i) => acc + val * vecB[i], 0);
+  const magA = Math.sqrt(vecA.reduce((acc, val) => acc + val * val, 0));
+  const magB = Math.sqrt(vecB.reduce((acc, val) => acc + val * val, 0));
+  if (magA === 0 || magB === 0) {
+    return 0;
+  }
+  return dotProduct / (magA * magB);
+}
+
 export default function Home() {
   const [documentText, setDocumentText] = useState("");
   const [chunks, setChunks] = useState<Chunk[]>([]);
@@ -66,6 +77,23 @@ export default function Home() {
     setAnswer("");
 
     try {
+      // 1. Get embedding for the query on the client
+      const { embedding: queryEmbedding } = await generateSemanticEmbeddings({ textChunk: query });
+
+      // 2. Find relevant chunks using cosine similarity on the client
+      const similarities = chunks.map(chunk => ({
+        ...chunk,
+        similarity: cosineSimilarity(queryEmbedding, chunk.embedding),
+      }));
+      
+      // 3. Sort by similarity and take the top N chunks
+      const topK = 3;
+      const relevantChunks = similarities
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, topK)
+        .map(chunk => chunk.text);
+
+      // 4. Call API with only relevant info
       const response = await fetch('/api/qa', {
         method: 'POST',
         headers: {
@@ -73,7 +101,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           query,
-          chunks,
+          relevantChunks,
         }),
       });
 
