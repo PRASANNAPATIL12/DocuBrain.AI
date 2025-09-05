@@ -4,12 +4,6 @@ import pdf from 'pdf-parse';
 
 export const runtime = 'nodejs';
 
-async function parsePdf(file: File) {
-  const fileBuffer = Buffer.from(await file.arrayBuffer());
-  const data = await pdf(fileBuffer);
-  return data.text;
-}
-
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -20,10 +14,13 @@ export async function POST(request: Request) {
     }
 
     let text = '';
+    const fileBuffer = Buffer.from(await file.arrayBuffer());
+
     if (file.type === 'application/pdf') {
-      text = await parsePdf(file);
+      const data = await pdf(fileBuffer);
+      text = data.text;
     } else {
-      text = await file.text();
+      text = fileBuffer.toString('utf8');
     }
 
     return NextResponse.json({text});
