@@ -5,22 +5,13 @@ import { DocumentProcessor } from "@/components/docubrain/document-processor";
 import { Header } from "@/components/docubrain/header";
 import { QAInterface } from "@/components/docubrain/qa-interface";
 import { useToast } from "@/hooks/use-toast";
-import { generateSemanticEmbeddings } from "@/ai/flows/generate-semantic-embeddings";
 
 export interface Chunk {
   text: string;
-  embedding: number[];
-}
-
-// Cosine similarity function
-function cosineSimilarity(vecA: number[], vecB: number[]) {
-  const dotProduct = vecA.reduce((acc, val, i) => acc + val * vecB[i], 0);
-  const magA = Math.sqrt(vecA.reduce((acc, val) => acc + val * val, 0));
-  const magB = Math.sqrt(vecB.reduce((acc, val) => acc + val * val, 0));
-  if (magA === 0 || magB === 0) {
-    return 0;
-  }
-  return dotProduct / (magA * magB);
+  // The embedding is handled server-side, but the client needs the text.
+  // We can simplify the client-side Chunk to just be string if we want,
+  // but keeping the object structure can be useful for future features.
+  embedding: number[]; 
 }
 
 export default function Home() {
@@ -35,52 +26,50 @@ export default function Home() {
 
   const { toast } = useToast();
 
+  // This function now calls our dedicated server endpoint for processing.
   const handleProcess = async (textToProcess?: string) => {
     const content = textToProcess || documentText;
     if (!content.trim()) return;
+
     setIsLoading(true);
     setChunks([]);
     setAnswer("");
+
     try {
-      // Robust chunking strategy
-      const chunkSize = 1500; // characters
-      const chunkOverlap = 200; // characters
-      const textChunks: string[] = [];
+      const response = await fetch('/api/process-document', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content }),
+      });
 
-      for (let i = 0; i < content.length; i += chunkSize - chunkOverlap) {
-        const chunk = content.substring(i, i + chunkSize);
-        textChunks.push(chunk);
-      }
-      
-      const filteredChunks = textChunks
-        .map(c => c.trim())
-        .filter(c => c.length > 10); // Filter out very short/empty chunks
-
-      // Process chunks sequentially to avoid rate limiting
-      const processedChunks: Chunk[] = [];
-      for (const textChunk of filteredChunks) {
-        const { embedding } = await generateSemanticEmbeddings({ textChunk });
-        processedChunks.push({ text: textChunk, embedding });
+      if (!response.ok) {
+        const errorDetails = await response.json();
+        throw new Error(errorDetails.error || 'Failed to process document on the server.');
       }
 
+      const { chunks: processedChunks } = await response.json();
       setChunks(processedChunks);
 
       toast({
         title: "Document Processed",
-        description: `Your document has been split into ${filteredChunks.length} chunks and embeddings have been generated. You can now ask questions.`,
+        description: `Your document is ready. You can now ask questions.`,
       });
-    } catch (error) {
+
+    } catch (error: any) {
       console.error("Error processing document:", error);
       toast({
         variant: "destructive",
         title: "An Error Occurred",
-        description: "Failed to process the document. This can happen with very large files. Please try again or use a smaller document.",
+        description: error.message || "Failed to process the document. Please try again.",
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  // This function now sends the query and chunks to the server for the full QA process.
   const handleQuery = async () => {
     if (!query.trim() || chunks.length === 0) return;
 
@@ -88,19 +77,6 @@ export default function Home() {
     setAnswer("");
 
     try {
-      const { embedding: queryEmbedding } = await generateSemanticEmbeddings({ textChunk: query });
-
-      const similarities = chunks.map(chunk => ({
-        ...chunk,
-        similarity: cosineSimilarity(queryEmbedding, chunk.embedding),
-      }));
-      
-      const topK = 3;
-      const relevantChunks = similarities
-        .sort((a, b) => b.similarity - a.similarity)
-        .slice(0, topK)
-        .map(chunk => chunk.text);
-
       const response = await fetch('/api/qa', {
         method: 'POST',
         headers: {
@@ -108,13 +84,13 @@ export default function Home() {
         },
         body: JSON.stringify({
           query,
-          relevantChunks,
+          chunks, // Send the full chunks, including embeddings
         }),
       });
 
       if (!response.ok) {
         const errorDetails = await response.json();
-        throw new Error(errorDetails.details || 'API request failed');
+        throw new Error(errorDetails.error || 'API request failed');
       }
 
       const result = await response.json();
@@ -158,8 +134,9 @@ export default function Home() {
       toast({
         title: 'File Uploaded',
         description:
-          'The document text has been extracted. Processing...',
+          'The document text has been extracted. Now processing on the server...',
       });
+      // Immediately process the extracted text
       await handleProcess(text);
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -184,7 +161,7 @@ export default function Home() {
             setDocumentText={setDocumentText}
             handleProcess={handleProcess}
             isLoading={isLoading}
-            chunks={chunks.map(c => c.text)}
+            chunks={chunks.map(c => c.text)} // We only need to display the text
             handleFileUpload={handleFileUpload}
             isUploading={isUploading}
             fileName={fileName}
