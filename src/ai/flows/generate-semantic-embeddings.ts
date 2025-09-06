@@ -1,38 +1,20 @@
 'use server';
 
-/**
- * @fileOverview This flow generates semantic embeddings for text chunks.
- *
- * - generateSemanticEmbeddings - A function that handles the generation of semantic embeddings.
- * - GenerateSemanticEmbeddingsInput - The input type for the generateSemanticEmbeddings function.
- * - GenerateSemanticEmbeddingsOutput - The return type for the generateSemanticEmbeddings function.
- */
-
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateSemanticEmbeddingsInputSchema = z.object({
-  textChunk: z.string().describe('The text chunk to generate an embedding for.'),
+  textChunk: z.string().describe('The text chunk to embed.'),
 });
-export type GenerateSemanticEmbeddingsInput = z.infer<
-  typeof GenerateSemanticEmbeddingsInputSchema
->;
+export type GenerateSemanticEmbeddingsInput = z.infer<typeof GenerateSemanticEmbeddingsInputSchema>;
 
 const GenerateSemanticEmbeddingsOutputSchema = z.object({
   embedding: z.array(z.number()).describe('The semantic embedding for the text chunk.'),
 });
-export type GenerateSemanticEmbeddingsOutput = z.infer<
-  typeof GenerateSemanticEmbeddingsOutputSchema
->;
+export type GenerateSemanticEmbeddingsOutput = z.infer<typeof GenerateSemanticEmbeddingsOutputSchema>;
 
-export async function generateSemanticEmbeddings(
-  input: GenerateSemanticEmbeddingsInput
-): Promise<GenerateSemanticEmbeddingsOutput> {
-  const embedding = await ai.embed({
-    content: input.textChunk,
-    embedder: 'googleai/text-embedding-004',
-  });
-  return { embedding };
+export async function generateSemanticEmbeddings(input: GenerateSemanticEmbeddingsInput): Promise<GenerateSemanticEmbeddingsOutput> {
+  return generateSemanticEmbeddingsFlow(input);
 }
 
 const generateSemanticEmbeddingsFlow = ai.defineFlow(
@@ -41,7 +23,16 @@ const generateSemanticEmbeddingsFlow = ai.defineFlow(
     inputSchema: GenerateSemanticEmbeddingsInputSchema,
     outputSchema: GenerateSemanticEmbeddingsOutputSchema,
   },
-  async input => {
-    return generateSemanticEmbeddings(input);
+  async ({ textChunk }) => {
+    const embeddingResponse = await ai.embed({
+        content: textChunk,
+    });
+
+    const embedding = embeddingResponse.output();
+    if (embedding === null || embedding === undefined) {
+        throw new Error("Failed to generate an embedding for the text chunk.");
+    }
+
+    return { embedding };
   }
 );

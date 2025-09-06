@@ -1,13 +1,4 @@
-// src/ai/flows/generate-contextual-answers.ts
 'use server';
-
-/**
- * @fileOverview This file defines a Genkit flow for generating contextual answers based on a query against stored documents.
- *
- * - generateContextualAnswer - A function that retrieves relevant text chunks from a vector database and uses an LLM to generate contextual answers.
- * - GenerateContextualAnswerInput - The input type for the generateContextualAnswer function.
- * - GenerateContextualAnswerOutput - The return type for the generateContextualAnswer function.
- */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
@@ -27,30 +18,31 @@ export async function generateContextualAnswer(input: GenerateContextualAnswerIn
   return generateContextualAnswerFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'generateContextualAnswerPrompt',
-  input: {schema: GenerateContextualAnswerInputSchema},
-  output: {schema: GenerateContextualAnswerOutputSchema},
-  prompt: `You are an AI assistant that answers questions based on the provided context.
-
-Context:
-{{#each relevantChunks}}
-{{this}}
-{{/each}}
-
-Question: {{query}}
-
-Answer:`, // Handlebars template to iterate over relevantChunks
-});
-
 const generateContextualAnswerFlow = ai.defineFlow(
   {
     name: 'generateContextualAnswerFlow',
     inputSchema: GenerateContextualAnswerInputSchema,
     outputSchema: GenerateContextualAnswerOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async ({ query, relevantChunks }) => {
+    const promptText = `You are an AI assistant that answers questions based on the provided context.
+
+    Context:
+    ${relevantChunks.join('\n\n---\n\n')}
+
+    Question: ${query}
+
+    Answer:`;
+
+    const llmResponse = await ai.generate({
+        prompt: promptText,
+    });
+
+    const answer = llmResponse.output();
+    if (answer === null || answer === undefined) {
+        throw new Error("Failed to get a response from the model.");
+    }
+
+    return { answer };
   }
 );

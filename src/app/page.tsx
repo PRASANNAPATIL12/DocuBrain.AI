@@ -42,29 +42,39 @@ export default function Home() {
     setChunks([]);
     setAnswer("");
     try {
-      const paragraphs = content
-        .split(/\n\s*\n/)
-        .map((p) => p.trim())
-        .filter((p) => p.length > 0);
+      // Robust chunking strategy
+      const chunkSize = 1500; // characters
+      const chunkOverlap = 200; // characters
+      const textChunks: string[] = [];
 
-      const chunkPromises = paragraphs.map(async (p) => {
-        const { embedding } = await generateSemanticEmbeddings({ textChunk: p });
-        return { text: p, embedding };
-      });
+      for (let i = 0; i < content.length; i += chunkSize - chunkOverlap) {
+        const chunk = content.substring(i, i + chunkSize);
+        textChunks.push(chunk);
+      }
+      
+      const filteredChunks = textChunks
+        .map(c => c.trim())
+        .filter(c => c.length > 10); // Filter out very short/empty chunks
 
-      const processedChunks = await Promise.all(chunkPromises);
+      // Process chunks sequentially to avoid rate limiting
+      const processedChunks: Chunk[] = [];
+      for (const textChunk of filteredChunks) {
+        const { embedding } = await generateSemanticEmbeddings({ textChunk });
+        processedChunks.push({ text: textChunk, embedding });
+      }
+
       setChunks(processedChunks);
 
       toast({
         title: "Document Processed",
-        description: `Your document has been split into ${paragraphs.length} chunks and embeddings have been generated. You can now ask questions.`,
+        description: `Your document has been split into ${filteredChunks.length} chunks and embeddings have been generated. You can now ask questions.`,
       });
     } catch (error) {
       console.error("Error processing document:", error);
       toast({
         variant: "destructive",
         title: "An Error Occurred",
-        description: "Failed to process the document. Please try again.",
+        description: "Failed to process the document. This can happen with very large files. Please try again or use a smaller document.",
       });
     } finally {
       setIsLoading(false);
@@ -78,23 +88,19 @@ export default function Home() {
     setAnswer("");
 
     try {
-      // 1. Get embedding for the query on the client
       const { embedding: queryEmbedding } = await generateSemanticEmbeddings({ textChunk: query });
 
-      // 2. Find relevant chunks using cosine similarity on the client
       const similarities = chunks.map(chunk => ({
         ...chunk,
         similarity: cosineSimilarity(queryEmbedding, chunk.embedding),
       }));
       
-      // 3. Sort by similarity and take the top N chunks
       const topK = 3;
       const relevantChunks = similarities
         .sort((a, b) => b.similarity - a.similarity)
         .slice(0, topK)
         .map(chunk => chunk.text);
 
-      // 4. Call API with only relevant info
       const response = await fetch('/api/qa', {
         method: 'POST',
         headers: {
@@ -107,17 +113,18 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('API request failed');
+        const errorDetails = await response.json();
+        throw new Error(errorDetails.details || 'API request failed');
       }
 
       const result = await response.json();
       setAnswer(result.answer);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating answer:", error);
       toast({
         variant: "destructive",
         title: "An Error Occurred",
-        description: "Failed to generate an answer. Please try again.",
+        description: `Failed to generate an answer: ${error.message}`,
       });
     } finally {
       setIsAnswering(false);
@@ -153,7 +160,6 @@ export default function Home() {
         description:
           'The document text has been extracted. Processing...',
       });
-      // Automatically process the text after upload
       await handleProcess(text);
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -190,12 +196,11 @@ export default function Home() {
             isAnswering={isAnswering}
             answer={answer}
             isDocumentProcessed={chunks.length > 0}
-            apiEndpoint={chunks.length > 0 ? `/api/qa` : undefined}
           />
         </div>
       </main>
       <footer className="py-4 text-center text-xs text-muted-foreground">
-        Powered by DocuBrain API
+        Powered by DocuBrain.AI
       </footer>
     </div>
   );
